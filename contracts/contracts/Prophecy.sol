@@ -6,10 +6,14 @@ import "./SafeMath.sol";
 contract Prophecy is Pausable {
   using SafeMath for uint256;
 
+  event Registered(bytes32 indexed deviceID, address indexed owner); // add more details if necessary
+  event Subscribed(bytes32 indexed deviceID, address indexed subscriber, uint256 startHeight, uint256 duration);
+  event Claimed(address indexed claimer, uint256 amount);
+
   /// STORAGE MAPPINGS
   mapping (bytes32 => Device) public devices;
   mapping (bytes32 => bool) public allowedIDHashes; // allowed hashes of IDs
-  mapping (address => uint256) public  balanceOf;   // unclaimed payments
+  mapping (address => uint256) public balanceOf;   // unclaimed payments
 
   uint256 public registrationFee;
   uint256 public subscriptionFee;
@@ -67,17 +71,18 @@ contract Prophecy is Pausable {
     )
     public whenNotPaused payable returns (bool)
     {
-      require(allowedIDHashes[keccak256(abi.encodePacked(_deviceId))], "id now allowed");
+      require(allowedIDHashes[keccak256(abi.encodePacked(_deviceId))], "id not allowed");
       require(devices[_deviceId].devicePublicKey != 0, "already registered");
       require(_devicePublicKey != 0, "device public key is required");
       require(_freq >= 0, "frequence needs to be positive");
       require(bytes(_spec).length > 0, "spec url is required");
       require(msg.value >= registrationFee, "not enough fee");
 
-      registrationFee += msg.value;
+      registrationFeeTotal += msg.value;
       allowedIDHashes[keccak256(abi.encodePacked(_deviceId))] = false;
       devices[_deviceId] = Device(_devicePublicKey, msg.sender, _freq, _dimensions, _spec,
         _price, 0, 0, "", 0);
+      emit Registered(_deviceId, msg.sender);
       return true;
     }
 
@@ -89,10 +94,10 @@ contract Prophecy is Pausable {
     uint256 _duration
     ) public whenNotPaused payable returns (bool)
   {
-    require(devices[_deviceId].devicePublicKey != 0, "no such a dvice");
+    require(devices[_deviceId].devicePublicKey != 0, "no such a device");
     require(_storageEPoint != 0, "storage endpoint is required");
     require(bytes(_storageToken).length > 0, "storage access token is required");
-    require(_duration >= 0, "duration is required");
+    require(_duration > 0, "duration is required");
     require(msg.value >= subscriptionFee + _duration.mul(devices[_deviceId].pricePerBlock), "not enough fee");
     require(devices[_deviceId].startHeight + devices[_deviceId].duration >= block.number, "the device has been subscribed");
 
@@ -102,29 +107,33 @@ contract Prophecy is Pausable {
     devices[_deviceId].storageEPoint = _storageEPoint;
     devices[_deviceId].storageToken = _storageToken;
     devices[_deviceId].duration = _duration;
+    emit Subscribed(_deviceId, msg.sender, block.number, _duration);
     return true;
   }
 
   // Device owner claims the payment after its matured
   function claim(bytes32 _deviceId) public whenNotPaused returns (bool)
   {
-    require(devices[_deviceId].devicePublicKey != 0, "no such a dvice");
+    require(devices[_deviceId].devicePublicKey != 0, "no such a device");
     require(devices[_deviceId].startHeight + devices[_deviceId].duration >= block.number, "the device has been subscribed");
-    require(devices[_deviceId].owner == msg.sender, "no owner");
-    require(balanceOf[msg.sender] >0, "no balance");
+    require(devices[_deviceId].owner == msg.sender, "not owner");
+    uint256 balance = balanceOf[msg.sender];
+    require(balance > 0, "no balance");
 
-    msg.sender.transfer(balanceOf[msg.sender]);
     balanceOf[msg.sender] = 0;
+    msg.sender.transfer(balance);
+    emit Claimed(msg.sender, balance);
     return true;
   }
 
   // Contract owner collect the fee
   function collectFees() onlyOwner public {
-    require(registrationFeeTotal + subscriptionFeeTotal > 0);
-
-    msg.sender.transfer(registrationFeeTotal + subscriptionFeeTotal);
-    registrationFeeTotal = 0;
-    subscriptionFeeTotal = 0;
+    uint256 total = registrationFeeTotal + subscriptionFeeTotal;
+    if (total > 0) {
+      registrationFeeTotal = 0;
+      subscriptionFeeTotal = 0;
+      msg.sender.transfer(total);
+    }
   }
 
 }
