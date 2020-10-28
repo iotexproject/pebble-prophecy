@@ -3,7 +3,6 @@ pragma solidity <6.0 >=0.4.24;
 import "./Pausable.sol";
 import "./SafeMath.sol";
 
-
 contract Prophecy is Pausable {
   using SafeMath for uint256;
 
@@ -12,21 +11,20 @@ contract Prophecy is Pausable {
   mapping (bytes32 => bool) public allowedIDHashes; // allowed hashes of IDs
   mapping (address => uint256) public  balanceOf;   // unclaimed payments
 
-  uint256 public registrationFee;  // start with 0
-  uint256 public subscriptionFee;  // start with 0
+  uint256 public registrationFee;
+  uint256 public subscriptionFee;
   uint256 public registrationFeeTotal;
   uint256 public subscriptionFeeTotal;
 
   /// TYPES
   struct Device {
-      // Intrinsic properties of the device
+      // Intrinsic properties
       bytes32 devicePublicKey;
-      // ServiceLevelAgreement
-      uint256 freq;         //  how many seconds per data point
-      bytes32 dimensions;   //  we need an encoding rule for this
-      string  spec;         //  link to the spec
-      uint256 pricePerBlock; // IOTX
-      address owner;    // owner's address
+      address owner;        // owner's address
+      uint256 freq;         // how many seconds per data point
+      bytes32 dimensions;   // we need an encoding rule for this
+      string  spec;         // link to the spec
+      uint256 pricePerBlock; // in terms of IOTX
 
       // Order info
       uint256 startHeight;
@@ -52,7 +50,7 @@ contract Prophecy is Pausable {
   function preRegisterDevice(bytes32 _deviceIdHash)
     public onlyOwner whenNotPaused returns (bool)
     {
-      require(!allowedIDHashes[_deviceIdHash]);
+      require(!allowedIDHashes[_deviceIdHash], "already whitelisted");
 
       allowedIDHashes[_deviceIdHash] = true;
       return true;
@@ -78,8 +76,8 @@ contract Prophecy is Pausable {
 
       registrationFee += msg.value;
       allowedIDHashes[keccak256(abi.encodePacked(_deviceId))] = false;
-      devices[_deviceId] = Device(_devicePublicKey, _freq, _dimensions, _spec,
-        _price, msg.sender, 0, 0, "", 0);
+      devices[_deviceId] = Device(_devicePublicKey, msg.sender, _freq, _dimensions, _spec,
+        _price, 0, 0, "", 0);
       return true;
     }
 
@@ -99,7 +97,7 @@ contract Prophecy is Pausable {
     require(devices[_deviceId].startHeight + devices[_deviceId].duration >= block.number, "the device has been subscribed");
 
     subscriptionFeeTotal += subscriptionFee;
-    balanceOf[msg.sender] += msg.value - subscriptionFee;
+    balanceOf[devices[_deviceId].owner] += msg.value - subscriptionFee;
     devices[_deviceId].startHeight = block.number;
     devices[_deviceId].storageEPoint = _storageEPoint;
     devices[_deviceId].storageToken = _storageToken;
@@ -115,19 +113,18 @@ contract Prophecy is Pausable {
     require(devices[_deviceId].owner == msg.sender, "no owner");
     require(balanceOf[msg.sender] >0, "no balance");
 
-    balanceOf[msg.sender] = 0;
     msg.sender.transfer(balanceOf[msg.sender]);
+    balanceOf[msg.sender] = 0;
     return true;
   }
 
+  // Contract owner collect the fee
   function collectFees() onlyOwner public {
     require(registrationFeeTotal + subscriptionFeeTotal > 0);
 
+    msg.sender.transfer(registrationFeeTotal + subscriptionFeeTotal);
     registrationFeeTotal = 0;
     subscriptionFeeTotal = 0;
-    msg.sender.transfer(registrationFeeTotal + subscriptionFeeTotal);
   }
-
-  // INTERNAL FUNCTIONS
 
 }
