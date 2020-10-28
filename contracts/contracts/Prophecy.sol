@@ -27,10 +27,10 @@ contract Prophecy is Pausable {
       uint256 pricePerBlock; // in terms of IOTX
 
       // Order info
-      uint256 startHeight;
-      bytes32 storageEPoint;
-      string  storageToken;
-      uint256 duration;
+      uint256 startHeight;    // the height starting from which this device's data stream is bought
+      bytes32 storageEPoint;  // storage endpoint buyer provides
+      string  storageToken;   // access token to the storage endpoint, encrypted by devicePublicKey
+      uint256 duration;       // how many blocks this order lasts
   }
 
   // CONSTRUCTOR
@@ -42,7 +42,7 @@ contract Prophecy is Pausable {
     registrationFee = fee;
   }
 
-  function setSubscriptionFeeTotal(uint256 fee) public onlyOwner {
+  function setSubscriptionFee(uint256 fee) public onlyOwner {
     subscriptionFee = fee;
   }
 
