@@ -6,12 +6,12 @@ import "./SafeMath.sol";
 contract Prophecy is Pausable {
   using SafeMath for uint256;
 
-  event Registered(bytes32 indexed deviceID, address indexed owner); // add more details if necessary
-  event Subscribed(bytes32 indexed deviceID, address indexed subscriber, uint256 startHeight, uint256 duration, uint256 income);
-  event Claimed(bytes32 indexed deviceID, address indexed claimer, uint256 amount);
+  event Registered(bytes indexed deviceID, address indexed owner); // add more details if necessary
+  event Subscribed(bytes indexed deviceID, address indexed subscriber, uint256 startHeight, uint256 duration, uint256 income);
+  event Claimed(bytes indexed deviceID, address indexed claimer, uint256 amount);
 
   /// STORAGE MAPPINGS
-  mapping (bytes32 => Device) public devices;
+  mapping (bytes => Device) public devices;
   mapping (bytes32 => bool) public allowedIDHashes; // allowed hashes of IDs
 
   uint256 public registrationFee;
@@ -63,7 +63,7 @@ contract Prophecy is Pausable {
 
   // Pay to Register the device
   function registerDevice(
-    bytes32 _deviceId,
+    bytes memory _deviceId,
     bytes32 _devicePublicKey,
     uint256 _freq,
     bytes32 _dimensions,
@@ -72,7 +72,7 @@ contract Prophecy is Pausable {
     )
     public whenNotPaused payable returns (bool)
     {
-      require(allowedIDHashes[keccak256(abi.encodePacked(_deviceId))], "id not allowed");
+      require(allowedIDHashes[keccak256(_deviceId)], "id not allowed");
       require(devices[_deviceId].devicePublicKey != 0, "already registered");
       require(_devicePublicKey != 0, "device public key is required");
       require(_freq >= 0, "frequence needs to be positive");
@@ -80,7 +80,7 @@ contract Prophecy is Pausable {
       require(msg.value >= registrationFee, "not enough fee");
 
       registrationFeeTotal += msg.value;
-      allowedIDHashes[keccak256(abi.encodePacked(_deviceId))] = false;
+      allowedIDHashes[keccak256(_deviceId)] = false;
       devices[_deviceId] = Device(_devicePublicKey, msg.sender, _freq, _dimensions, _spec,
         _price, 0, 0, 0, 0, "", 0);
       emit Registered(_deviceId, msg.sender);
@@ -89,7 +89,7 @@ contract Prophecy is Pausable {
 
   // Pay to subscribe to the device's data stream
   function subscribe(
-    bytes32 _deviceId,
+    bytes memory _deviceId,
     bytes32 _storageEPoint,
     string memory _storageToken,
     uint256 _duration
@@ -116,7 +116,7 @@ contract Prophecy is Pausable {
   }
 
   // Device owner claims the payment after its matured
-  function claim(bytes32 _deviceId) public whenNotPaused returns (bool)
+  function claim(bytes memory _deviceId) public whenNotPaused returns (bool)
   {
     require(devices[_deviceId].devicePublicKey != 0, "no such a device");
     require(devices[_deviceId].startHeight + devices[_deviceId].duration >= block.number, "the device has been subscribed");
@@ -142,6 +142,19 @@ contract Prophecy is Pausable {
       subscriptionFeeTotal = 0;
       msg.sender.transfer(total);
     }
+  }
+
+  // Get device info by ID
+  function getDeviceByID(
+    bytes memory _deviceId
+  ) public view returns (bytes32, address, uint256, bytes32, string memory,
+    uint256, uint256, uint256, uint256, bytes32, string memory, uint256) {
+    require(devices[_deviceId].devicePublicKey != 0, "no such a device");
+
+    Device memory d = devices[_deviceId];
+    return (d.devicePublicKey, d.owner, d.freq, d.dimensions, d.spec,
+      d.pricePerBlock, d.settledBalance, d.pendingBalance, d.startHeight,
+      d.storageEPoint, d.storageToken, d.duration);
   }
 
 }

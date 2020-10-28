@@ -294,10 +294,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        473,
-                        474
+                        825,
+                        826
                       ],
-                      "referencedDeclaration": 473,
+                      "referencedDeclaration": 825,
                       "src": "400:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -377,10 +377,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        473,
-                        474
+                        825,
+                        826
                       ],
-                      "referencedDeclaration": 473,
+                      "referencedDeclaration": 825,
                       "src": "553:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -939,10 +939,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        473,
-                        474
+                        825,
+                        826
                       ],
-                      "referencedDeclaration": 473,
+                      "referencedDeclaration": 825,
                       "src": "400:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -1022,10 +1022,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        473,
-                        474
+                        825,
+                        826
                       ],
-                      "referencedDeclaration": 473,
+                      "referencedDeclaration": 825,
                       "src": "553:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -1399,7 +1399,7 @@
   },
   "networks": {},
   "schemaVersion": "3.0.18",
-  "updatedAt": "2020-10-27T22:48:50.716Z",
+  "updatedAt": "2020-10-28T20:57:45.608Z",
   "devdoc": {
     "details": "Base contract which allows children to implement an emergency stop mechanism.",
     "methods": {
