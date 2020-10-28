@@ -7,13 +7,12 @@ contract Prophecy is Pausable {
   using SafeMath for uint256;
 
   event Registered(bytes32 indexed deviceID, address indexed owner); // add more details if necessary
-  event Subscribed(bytes32 indexed deviceID, address indexed subscriber, uint256 startHeight, uint256 duration);
-  event Claimed(address indexed claimer, uint256 amount);
+  event Subscribed(bytes32 indexed deviceID, address indexed subscriber, uint256 startHeight, uint256 duration, uint256 income);
+  event Claimed(bytes32 indexed deviceID, address indexed claimer, uint256 amount);
 
   /// STORAGE MAPPINGS
   mapping (bytes32 => Device) public devices;
   mapping (bytes32 => bool) public allowedIDHashes; // allowed hashes of IDs
-  mapping (address => uint256) public balanceOf;   // unclaimed payments
 
   uint256 public registrationFee;
   uint256 public subscriptionFee;
@@ -29,6 +28,8 @@ contract Prophecy is Pausable {
       bytes32 dimensions;   // we need an encoding rule for this
       string  spec;         // link to the spec
       uint256 pricePerBlock; // in terms of IOTX
+      uint256 settledBalance; // balance ready to claim
+      uint256 pendingBalance; // balance in pending
 
       // Order info
       uint256 startHeight;    // the height starting from which this device's data stream is bought
@@ -81,7 +82,7 @@ contract Prophecy is Pausable {
       registrationFeeTotal += msg.value;
       allowedIDHashes[keccak256(abi.encodePacked(_deviceId))] = false;
       devices[_deviceId] = Device(_devicePublicKey, msg.sender, _freq, _dimensions, _spec,
-        _price, 0, 0, "", 0);
+        _price, 0, 0, 0, 0, "", 0);
       emit Registered(_deviceId, msg.sender);
       return true;
     }
@@ -102,12 +103,15 @@ contract Prophecy is Pausable {
     require(devices[_deviceId].startHeight + devices[_deviceId].duration >= block.number, "the device has been subscribed");
 
     subscriptionFeeTotal += subscriptionFee;
-    balanceOf[devices[_deviceId].owner] += msg.value - subscriptionFee;
     devices[_deviceId].startHeight = block.number;
     devices[_deviceId].storageEPoint = _storageEPoint;
     devices[_deviceId].storageToken = _storageToken;
     devices[_deviceId].duration = _duration;
-    emit Subscribed(_deviceId, msg.sender, block.number, _duration);
+    if (devices[_deviceId].pendingBalance > 0) {
+      devices[_deviceId].settledBalance = devices[_deviceId].settledBalance.add(devices[_deviceId].pendingBalance);
+    }
+    devices[_deviceId].pendingBalance = msg.value.sub(subscriptionFee);
+    emit Subscribed(_deviceId, msg.sender, block.number, _duration, devices[_deviceId].pendingBalance);
     return true;
   }
 
@@ -117,12 +121,16 @@ contract Prophecy is Pausable {
     require(devices[_deviceId].devicePublicKey != 0, "no such a device");
     require(devices[_deviceId].startHeight + devices[_deviceId].duration >= block.number, "the device has been subscribed");
     require(devices[_deviceId].owner == msg.sender, "not owner");
-    uint256 balance = balanceOf[msg.sender];
+    if (devices[_deviceId].pendingBalance > 0) {
+      devices[_deviceId].settledBalance = devices[_deviceId].settledBalance.add(devices[_deviceId].pendingBalance);
+      devices[_deviceId].pendingBalance = 0;
+    }
+    uint256 balance = devices[_deviceId].settledBalance;
     require(balance > 0, "no balance");
 
-    balanceOf[msg.sender] = 0;
+    devices[_deviceId].settledBalance = 0;
     msg.sender.transfer(balance);
-    emit Claimed(msg.sender, balance);
+    emit Claimed(_deviceId, msg.sender, balance);
     return true;
   }
 
