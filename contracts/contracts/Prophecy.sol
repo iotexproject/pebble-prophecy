@@ -37,7 +37,7 @@ contract Prophecy is Pausable {
 
       // Order info
       uint256 startHeight;    // the height starting from which this device's data stream is bought
-      bytes32 storageEPoint;  // storage endpoint buyer provides
+      string storageEPoint;  // storage endpoint buyer provides
       string  storageToken;   // access token to the storage endpoint, encrypted by devicePublicKey
       uint256 duration;       // how many blocks this order lasts
   }
@@ -85,7 +85,7 @@ contract Prophecy is Pausable {
       registrationFeeTotal += msg.value;
       allowedIDHashes[keccak256(_deviceId)] = false;
       devices[_deviceId] = Device(_devicePublicKey, msg.sender, _freq, _spec,
-        _price, 0, 0, 0, 0, "", 0);
+        _price, 0, 0, 0, "", "", 0);
       deviceIDs.push(_deviceId);
       emit Registered(_deviceId, msg.sender);
       return true;
@@ -122,13 +122,13 @@ contract Prophecy is Pausable {
   // Pay to subscribe to the device's data stream
   function subscribe(
     bytes memory _deviceId,
-    bytes32 _storageEPoint,
+    string memory _storageEPoint,
     string memory _storageToken,
     uint256 _duration
     ) public whenNotPaused payable returns (bool)
   {
     require(devices[_deviceId].devicePublicKey.length > 0, "no such a device");
-    require(_storageEPoint != 0, "storage endpoint is required");
+    require(bytes(_storageEPoint).length > 0, "storage endpoint is required");
     require(bytes(_storageToken).length > 0, "storage access token is required");
     require(_duration > 0 && _duration <= maxDuration, "inappropriate duration");
     require(msg.value >= subscriptionFee + _duration.mul(devices[_deviceId].pricePerBlock), "not enough fee");
@@ -178,7 +178,7 @@ contract Prophecy is Pausable {
   }
 
   // Get device IDs with pagination
-  function getDeviceByID(uint256 _offset, uint8 limit)
+  function getDeviceIDs(uint256 _offset, uint8 limit)
     public view returns (uint256 count, bytes[] memory ids) {
       require(_offset < deviceIDs.length && limit != 0);
 
@@ -197,7 +197,7 @@ contract Prophecy is Pausable {
   function getDeviceByID(
     bytes memory _deviceId
   ) public view returns (bytes memory, address, uint256, string memory,
-    uint256, uint256, uint256, uint256, bytes32, string memory, uint256) {
+    uint256, uint256, uint256, uint256, string memory, string memory, uint256) {
     require(devices[_deviceId].devicePublicKey.length > 0, "no such a device");
 
     Device memory d = devices[_deviceId];
