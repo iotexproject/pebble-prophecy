@@ -1,4 +1,5 @@
 pragma solidity <6.0 >=0.4.24;
+pragma experimental ABIEncoderV2;
 
 import "./Pausable.sol";
 import "./SafeMath.sol";
@@ -9,8 +10,10 @@ contract Prophecy is Pausable {
   event Registered(bytes indexed deviceID, address indexed owner); // add more details if necessary
   event Subscribed(bytes indexed deviceID, address indexed subscriber, uint256 startHeight, uint256 duration, uint256 income);
   event Claimed(bytes indexed deviceID, address indexed claimer, uint256 amount);
+  event Updated(bytes indexed deviceID, address indexed owner); // add more details if necessary
 
   /// STORAGE MAPPINGS
+  bytes[] public deviceIDs;
   mapping (bytes => Device) public devices;
   mapping (bytes32 => bool) public allowedIDHashes; // allowed hashes of IDs
 
@@ -18,6 +21,8 @@ contract Prophecy is Pausable {
   uint256 public subscriptionFee;
   uint256 public registrationFeeTotal;
   uint256 public subscriptionFeeTotal;
+
+  uint256 public constant maxDuration = 86400 / 5 * 90; // 90 days
 
   /// TYPES
   struct Device {
@@ -81,9 +86,38 @@ contract Prophecy is Pausable {
       allowedIDHashes[keccak256(_deviceId)] = false;
       devices[_deviceId] = Device(_devicePublicKey, msg.sender, _freq, _spec,
         _price, 0, 0, 0, 0, "", 0);
+      deviceIDs.push(_deviceId);
       emit Registered(_deviceId, msg.sender);
       return true;
     }
+
+    // Update info about a registered device
+    function updateDevice(
+      bytes memory _deviceId,
+      bytes memory _devicePublicKey,
+      uint256 _freq,
+      string memory _spec,
+      uint256 _price
+      )
+      public whenNotPaused returns (bool)
+      {
+        require(devices[_deviceId].devicePublicKey.length == 0, "not yet registered");
+        require(devices[_deviceId].owner == msg.sender, "not owner");
+        require(_devicePublicKey.length > 0, "device public key is required");
+        require(_freq >= 0, "frequence needs to be positive");
+        require(bytes(_spec).length > 0, "spec url is required");
+
+        // To be on the safe side, tho we can allow change when a device is subscribed
+        require(devices[_deviceId].startHeight + devices[_deviceId].duration >= block.number, "the device has been subscribed");
+
+        devices[_deviceId] = Device(_devicePublicKey, msg.sender, _freq, _spec,
+          _price, devices[_deviceId].settledBalance, devices[_deviceId].pendingBalance,
+          devices[_deviceId].startHeight, devices[_deviceId].storageEPoint,
+          devices[_deviceId].storageToken, devices[_deviceId].duration);
+
+        emit Updated(_deviceId, msg.sender);
+        return true;
+      }
 
   // Pay to subscribe to the device's data stream
   function subscribe(
@@ -96,7 +130,7 @@ contract Prophecy is Pausable {
     require(devices[_deviceId].devicePublicKey.length > 0, "no such a device");
     require(_storageEPoint != 0, "storage endpoint is required");
     require(bytes(_storageToken).length > 0, "storage access token is required");
-    require(_duration > 0, "duration is required");
+    require(_duration > 0 && _duration <= maxDuration, "inappropriate duration");
     require(msg.value >= subscriptionFee + _duration.mul(devices[_deviceId].pricePerBlock), "not enough fee");
     require(devices[_deviceId].startHeight + devices[_deviceId].duration >= block.number, "the device has been subscribed");
 
@@ -133,14 +167,31 @@ contract Prophecy is Pausable {
   }
 
   // Contract owner collect the fee
-  function collectFees() onlyOwner public {
+  function collectFees() onlyOwner public returns (bool) {
     uint256 total = registrationFeeTotal + subscriptionFeeTotal;
     if (total > 0) {
       registrationFeeTotal = 0;
       subscriptionFeeTotal = 0;
       msg.sender.transfer(total);
     }
+    return true;
   }
+
+  // Get device IDs with pagination
+  function getDeviceByID(uint256 _offset, uint8 limit)
+    public view returns (uint256 count, bytes[] memory ids) {
+      require(_offset < deviceIDs.length && limit != 0);
+
+      ids = new bytes[](limit);
+      for (uint256 i = 0; i < limit; i++) {
+          if (_offset + i >= deviceIDs.length) {
+              break;
+          }
+          ids[count] = deviceIDs[_offset + i];
+          count++;
+      }
+  }
+
 
   // Get device info by ID
   function getDeviceByID(
