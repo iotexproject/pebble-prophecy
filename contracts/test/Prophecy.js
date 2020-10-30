@@ -19,7 +19,7 @@ contract('Prophecy', function ([owner]) {
     assert.equal(await this.prophecy.subscriptionFee(), 12345678);
   });
 
-  it('pre register device', async function () {
+  it('pre-register device', async function () {
 
     let _deviceId = web3.utils.fromAscii("123456789");
     await this.prophecy.preRegisterDevice(owner);

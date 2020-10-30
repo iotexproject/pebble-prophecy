@@ -114,7 +114,8 @@ contract Prophecy is Pausable {
         require(bytes(_spec).length > 0, "spec url is required");
 
         // To be on the safe side, tho we can allow change when a device is subscribed
-        require(devices[_deviceId].startHeight + devices[_deviceId].duration >= block.number, "the device has been subscribed");
+        require( (devices[_deviceId].startHeight + devices[_deviceId].duration == 0) ||
+          (devices[_deviceId].startHeight + devices[_deviceId].duration >= block.number), "the device has been subscribed");
 
         devices[_deviceId] = Device(_devicePubKeyX, _devicePubKeyY, msg.sender, _freq, _price,
           devices[_deviceId].settledBalance, devices[_deviceId].pendingBalance, _spec,
@@ -139,7 +140,8 @@ contract Prophecy is Pausable {
     require(bytes(_storageToken).length > 0, "storage access token is required");
     require(_duration > 0 && _duration <= maxDuration, "inappropriate duration");
     require(msg.value >= subscriptionFee + _duration.mul(devices[_deviceId].pricePerBlock), "not enough fee");
-    require(devices[_deviceId].startHeight + devices[_deviceId].duration >= block.number, "the device has been subscribed");
+    require((devices[_deviceId].startHeight + devices[_deviceId].duration == 0) ||
+      (devices[_deviceId].startHeight + devices[_deviceId].duration >= block.number), "the device has been subscribed");
 
     subscriptionFeeTotal += subscriptionFee;
     devices[_deviceId].startHeight = block.number;
