@@ -29,7 +29,19 @@ return: 1
 ```
 
 **preRegisterDevice()**
+Assume deivce id is 352656100794612
 ```
-ioctl contract invoke function io128vsgx4fg7rmd2n8s090f5phamfagc4rryj4u6 a.abi preRegisterDevice --with-arguments '{"_deviceIdHash":"0x1f214438d7c061ad56f98540db9a082d372df1ba9a3c96367f0103aa16c2fe9a"}' --endpoint api.testnet.iotex.one:443
+ioctl contract invoke function io128vsgx4fg7rmd2n8s090f5phamfagc4rryj4u6 a.abi preRegisterDevice --with-arguments '{"_deviceIdHash":"0xd8617ccedb8339fc2e7e790455c868828acde6b3e95919a8c31aed3c6cc45a95"}' --endpoint api.testnet.iotex.one:443
 ...
-Wait for several seconds and query this action by hash: testnet.iotexscan.io/action/a551a42da2eaa8921af05d07b89f47ac64e4c5ba49db97ba6176cd09d88b7f72```
+Wait for several seconds and query this action by hash: testnet.iotexscan.io/action/4ab39cf18d86624eba0ff51a54d8b58c763ed515896cd3a9434197d913275578
+```
+
+**registerDevice()**
+Assume deivce id is 352656100794612
+```
+ioctl contract invoke function io128vsgx4fg7rmd2n8s090f5phamfagc4rryj4u6 a.abi registerDevice --with-arguments '{"_deviceId":"0x0000000000000000000000000000000000333532363536313030373934363132","_devicePubKeyX":"0x0000000000000000000000000000000000000000000000000000000000012345","_devicePubKeyY":"0x0000000000000000000000000000000000000000000000000000000000012345","_freq":"30","_spec":"trypebble.io/123","_price":"1"}' -l 10000000 --endpoint api.testnet.iotex.one:443
+...
+Wait for several seconds and query this action by hash: testnet.iotexscan.io/action/16bc89698809e640d57be750ff22f87b8dfcfed4b2d03721e37398e5f57b4323
+```
+
+
