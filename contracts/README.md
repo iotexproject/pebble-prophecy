@@ -19,7 +19,7 @@ We use `io128vsgx4fg7rmd2n8s090f5phamfagc4rryj4u6` deployed on testnet (via this
 ```
 ioctl contract invoke function io128vsgx4fg7rmd2n8s090f5phamfagc4rryj4u6 a.abi setRegistrationFee --with-arguments '{"fee":"1"}' --endpoint api.testnet.iotex.one:443
 ...
-Wait for several seconds and query this action by hash:iotexscan.io/action/2dc76d074c97b6dea0a377b9f0fde77b5067ce99b7f0a3a4441576fb2de5c88f
+Wait for several seconds and query this action by hash: testnet.iotexscan.io/action/2dc76d074c97b6dea0a377b9f0fde77b5067ce99b7f0a3a4441576fb2de5c88f
 ```
 
 **registrationFee()**
@@ -27,3 +27,9 @@ Wait for several seconds and query this action by hash:iotexscan.io/action/2dc76
 ioctl contract test function io128vsgx4fg7rmd2n8s090f5phamfagc4rryj4u6 a.abi registrationFee --endpoint api.testnet.iotex.one:443
 return: 1
 ```
+
+**preRegisterDevice()**
+```
+ioctl contract invoke function io128vsgx4fg7rmd2n8s090f5phamfagc4rryj4u6 a.abi preRegisterDevice --with-arguments '{"_deviceIdHash":"0x1f214438d7c061ad56f98540db9a082d372df1ba9a3c96367f0103aa16c2fe9a"}' --endpoint api.testnet.iotex.one:443
+...
+Wait for several seconds and query this action by hash: testnet.iotexscan.io/action/a551a42da2eaa8921af05d07b89f47ac64e4c5ba49db97ba6176cd09d88b7f72```
