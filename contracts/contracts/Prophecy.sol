@@ -1,5 +1,4 @@
 pragma solidity <6.0 >=0.4.24;
-pragma experimental ABIEncoderV2;
 
 import "./Pausable.sol";
 import "./SafeMath.sol";
@@ -7,14 +6,14 @@ import "./SafeMath.sol";
 contract Prophecy is Pausable {
   using SafeMath for uint256;
 
-  event Registered(bytes indexed deviceID, address indexed owner); // add more details if necessary
-  event Subscribed(bytes indexed deviceID, address indexed subscriber, uint256 startHeight, uint256 duration, uint256 income);
-  event Claimed(bytes indexed deviceID, address indexed claimer, uint256 amount);
-  event Updated(bytes indexed deviceID, address indexed owner); // add more details if necessary
+  event Registered(bytes32 indexed deviceID, address indexed owner); // add more details if necessary
+  event Subscribed(bytes32 indexed deviceID, address indexed subscriber, uint256 startHeight, uint256 duration, uint256 income);
+  event Claimed(bytes32 indexed deviceID, address indexed claimer, uint256 amount);
+  event Updated(bytes32 indexed deviceID, address indexed owner); // add more details if necessary
 
   /// STORAGE MAPPINGS
-  bytes[] public deviceIDs;
-  mapping (bytes => Device) public devices;
+  bytes32[] public deviceIDs;
+  mapping (bytes32 => Device) public devices;
   mapping (bytes32 => bool) public allowedIDHashes; // allowed hashes of IDs
 
   uint256 public registrationFee;
@@ -27,19 +26,20 @@ contract Prophecy is Pausable {
   /// TYPES
   struct Device {
       // Intrinsic properties
-      bytes devicePublicKey;
+      bytes32 devicePubKeyX; // device public key X co-ordinate
+      bytes32 devicePubKeyY; // device public key Y co-ordinate
       address owner;        // owner's address
       uint256 freq;         // how many seconds per data point
-      string  spec;         // link to the spec
       uint256 pricePerBlock; // in terms of IOTX
       uint256 settledBalance; // balance ready to claim
       uint256 pendingBalance; // balance in pending
+      string  spec;         // link to the spec
 
       // Order info
       uint256 startHeight;    // the height starting from which this device's data stream is bought
-      string storageEPoint;  // storage endpoint buyer provides
-      string  storageToken;   // access token to the storage endpoint, encrypted by devicePublicKey
       uint256 duration;       // how many blocks this order lasts
+      string storageEPoint;  // storage endpoint buyer provides
+      string storageToken;   // access token to the storage endpoint, encrypted by devicePublicKey
   }
 
   // CONSTRUCTOR
@@ -67,25 +67,28 @@ contract Prophecy is Pausable {
 
   // Pay to Register the device
   function registerDevice(
-    bytes memory _deviceId,
-    bytes memory _devicePublicKey,
+    bytes32 _deviceId,
+    bytes32 _devicePubKeyX,
+    bytes32 _devicePubKeyY,
     uint256 _freq,
     string memory _spec,
     uint256 _price
     )
     public whenNotPaused payable returns (bool)
     {
-      require(allowedIDHashes[keccak256(_deviceId)], "id not allowed");
-      require(devices[_deviceId].devicePublicKey.length > 0, "already registered");
-      require(_devicePublicKey.length > 0, "device public key is required");
+      require(allowedIDHashes[keccak256(abi.encodePacked(_deviceId))], "id not allowed");
+      require(devices[_deviceId].devicePubKeyX == 0, "already registered");
+      require(devices[_deviceId].devicePubKeyY == 0, "already registered");
+      require(_devicePubKeyX != 0, "device public key X required");
+      require(_devicePubKeyY != 0, "device public key Y required");
       require(_freq >= 0, "frequence needs to be positive");
       require(bytes(_spec).length > 0, "spec url is required");
       require(msg.value >= registrationFee, "not enough fee");
 
       registrationFeeTotal += msg.value;
-      allowedIDHashes[keccak256(_deviceId)] = false;
-      devices[_deviceId] = Device(_devicePublicKey, msg.sender, _freq, _spec,
-        _price, 0, 0, 0, "", "", 0);
+      allowedIDHashes[keccak256(abi.encodePacked(_deviceId))] = false;
+      devices[_deviceId] = Device(_devicePubKeyX, _devicePubKeyY, msg.sender, _freq,
+        _price, 0, 0, _spec, 0, 0, "", "");
       deviceIDs.push(_deviceId);
       emit Registered(_deviceId, msg.sender);
       return true;
@@ -93,27 +96,30 @@ contract Prophecy is Pausable {
 
     // Update info about a registered device
     function updateDevice(
-      bytes memory _deviceId,
-      bytes memory _devicePublicKey,
+      bytes32 _deviceId,
+      bytes32 _devicePubKeyX,
+      bytes32 _devicePubKeyY,
       uint256 _freq,
       string memory _spec,
       uint256 _price
       )
       public whenNotPaused returns (bool)
       {
-        require(devices[_deviceId].devicePublicKey.length == 0, "not yet registered");
+        require(devices[_deviceId].devicePubKeyX != 0, "not yet registered");
+        require(devices[_deviceId].devicePubKeyY != 0, "not yet registered");
         require(devices[_deviceId].owner == msg.sender, "not owner");
-        require(_devicePublicKey.length > 0, "device public key is required");
+        require(_devicePubKeyX != 0, "device public key X required");
+        require(_devicePubKeyY != 0, "device public key Y required");
         require(_freq >= 0, "frequence needs to be positive");
         require(bytes(_spec).length > 0, "spec url is required");
 
         // To be on the safe side, tho we can allow change when a device is subscribed
         require(devices[_deviceId].startHeight + devices[_deviceId].duration >= block.number, "the device has been subscribed");
 
-        devices[_deviceId] = Device(_devicePublicKey, msg.sender, _freq, _spec,
-          _price, devices[_deviceId].settledBalance, devices[_deviceId].pendingBalance,
-          devices[_deviceId].startHeight, devices[_deviceId].storageEPoint,
-          devices[_deviceId].storageToken, devices[_deviceId].duration);
+        devices[_deviceId] = Device(_devicePubKeyX, _devicePubKeyY, msg.sender, _freq, _price,
+          devices[_deviceId].settledBalance, devices[_deviceId].pendingBalance, _spec,
+          devices[_deviceId].startHeight, devices[_deviceId].duration,
+          devices[_deviceId].storageEPoint, devices[_deviceId].storageToken);
 
         emit Updated(_deviceId, msg.sender);
         return true;
@@ -121,13 +127,14 @@ contract Prophecy is Pausable {
 
   // Pay to subscribe to the device's data stream
   function subscribe(
-    bytes memory _deviceId,
+    bytes32 _deviceId,
     string memory _storageEPoint,
     string memory _storageToken,
     uint256 _duration
     ) public whenNotPaused payable returns (bool)
   {
-    require(devices[_deviceId].devicePublicKey.length > 0, "no such a device");
+    require(devices[_deviceId].devicePubKeyX != 0, "no such device");
+    require(devices[_deviceId].devicePubKeyY != 0, "no such device");
     require(bytes(_storageEPoint).length > 0, "storage endpoint is required");
     require(bytes(_storageToken).length > 0, "storage access token is required");
     require(_duration > 0 && _duration <= maxDuration, "inappropriate duration");
@@ -148,9 +155,10 @@ contract Prophecy is Pausable {
   }
 
   // Device owner claims the payment after its matured
-  function claim(bytes memory _deviceId) public whenNotPaused returns (bool)
+  function claim(bytes32 _deviceId) public whenNotPaused returns (bool)
   {
-    require(devices[_deviceId].devicePublicKey.length > 0, "no such a device");
+    require(devices[_deviceId].devicePubKeyX != 0, "no such device");
+    require(devices[_deviceId].devicePubKeyY != 0, "no such device");
     require(devices[_deviceId].startHeight + devices[_deviceId].duration >= block.number, "the device has been subscribed");
     require(devices[_deviceId].owner == msg.sender, "not owner");
     if (devices[_deviceId].pendingBalance > 0) {
@@ -179,10 +187,10 @@ contract Prophecy is Pausable {
 
   // Get device IDs with pagination
   function getDeviceIDs(uint256 _offset, uint8 limit)
-    public view returns (uint256 count, bytes[] memory ids) {
+    public view returns (uint256 count, bytes32[] memory ids) {
       require(_offset < deviceIDs.length && limit != 0);
 
-      ids = new bytes[](limit);
+      ids = new bytes32[](limit);
       for (uint256 i = 0; i < limit; i++) {
           if (_offset + i >= deviceIDs.length) {
               break;
@@ -195,15 +203,15 @@ contract Prophecy is Pausable {
 
   // Get device info by ID
   function getDeviceByID(
-    bytes memory _deviceId
-  ) public view returns (bytes memory, address, uint256, string memory,
-    uint256, uint256, uint256, uint256, string memory, string memory, uint256) {
-    require(devices[_deviceId].devicePublicKey.length > 0, "no such a device");
+    bytes32 _deviceId
+  ) public view returns (bytes32, bytes32, address, uint256, uint256, uint256, uint256,
+    string memory, uint256, uint256, string memory, string memory) {
+    require(devices[_deviceId].devicePubKeyX != 0, "no such device");
+    require(devices[_deviceId].devicePubKeyY != 0, "no such device");
 
     Device memory d = devices[_deviceId];
-    return (d.devicePublicKey, d.owner, d.freq, d.spec,
-      d.pricePerBlock, d.settledBalance, d.pendingBalance, d.startHeight,
-      d.storageEPoint, d.storageToken, d.duration);
+    return (d.devicePubKeyX, d.devicePubKeyY, d.owner, d.freq, d.pricePerBlock,
+      d.settledBalance, d.pendingBalance, d.spec,
+      d.startHeight, d.duration, d.storageEPoint, d.storageToken);
   }
-
 }
