@@ -114,8 +114,8 @@ contract Prophecy is Pausable {
         require(bytes(_spec).length > 0, "spec url is required");
 
         // To be on the safe side, tho we can allow change when a device is subscribed
-        require( (devices[_deviceId].startHeight + devices[_deviceId].duration == 0) ||
-          (devices[_deviceId].startHeight + devices[_deviceId].duration >= block.number), "the device has been subscribed");
+        uint256 endHeight = devices[_deviceId].startHeight + devices[_deviceId].duration;
+        require(endHeight == 0 || endHeight < block.number, "device in active subscription");
 
         devices[_deviceId] = Device(_devicePubKeyX, _devicePubKeyY, msg.sender, _freq, _price,
           devices[_deviceId].settledBalance, devices[_deviceId].pendingBalance, _spec,
@@ -136,12 +136,12 @@ contract Prophecy is Pausable {
   {
     require(devices[_deviceId].devicePubKeyX != 0, "no such device");
     require(devices[_deviceId].devicePubKeyY != 0, "no such device");
-    require(bytes(_storageEPoint).length > 0, "storage endpoint is required");
-    require(bytes(_storageToken).length > 0, "storage access token is required");
+    require(bytes(_storageEPoint).length > 0, "storage endpoint required");
+    require(bytes(_storageToken).length > 0, "storage access token required");
     require(_duration > 0 && _duration <= maxDuration, "inappropriate duration");
     require(msg.value >= subscriptionFee + _duration.mul(devices[_deviceId].pricePerBlock), "not enough fee");
-    require((devices[_deviceId].startHeight + devices[_deviceId].duration == 0) ||
-      (devices[_deviceId].startHeight + devices[_deviceId].duration >= block.number), "the device has been subscribed");
+    uint256 endHeight = devices[_deviceId].startHeight + devices[_deviceId].duration;
+    require(endHeight == 0 || endHeight < block.number, "device in active subscription");
 
     subscriptionFeeTotal += subscriptionFee;
     devices[_deviceId].startHeight = block.number;
@@ -159,10 +159,12 @@ contract Prophecy is Pausable {
   // Device owner claims the payment after its matured
   function claim(bytes32 _deviceId) public whenNotPaused returns (bool)
   {
+    require(devices[_deviceId].owner == msg.sender, "not owner");
     require(devices[_deviceId].devicePubKeyX != 0, "no such device");
     require(devices[_deviceId].devicePubKeyY != 0, "no such device");
-    require(devices[_deviceId].startHeight + devices[_deviceId].duration >= block.number, "the device has been subscribed");
-    require(devices[_deviceId].owner == msg.sender, "not owner");
+    uint256 endHeight = devices[_deviceId].startHeight + devices[_deviceId].duration;
+    require(endHeight > 0, "device not yet subscribed");
+    require(endHeight < block.number, "device in active subscription");
     if (devices[_deviceId].pendingBalance > 0) {
       devices[_deviceId].settledBalance = devices[_deviceId].settledBalance.add(devices[_deviceId].pendingBalance);
       devices[_deviceId].pendingBalance = 0;
@@ -202,18 +204,26 @@ contract Prophecy is Pausable {
       }
   }
 
-
   // Get device info by ID
-  function getDeviceByID(
+  function getDeviceInfoByID(
     bytes32 _deviceId
-  ) public view returns (bytes32, bytes32, address, uint256, uint256, uint256, uint256,
-    string memory, uint256, uint256, string memory, string memory) {
+  ) public view returns (bytes32, bytes32, address, uint256, uint256, uint256, uint256, string memory) {
     require(devices[_deviceId].devicePubKeyX != 0, "no such device");
     require(devices[_deviceId].devicePubKeyY != 0, "no such device");
 
     Device memory d = devices[_deviceId];
     return (d.devicePubKeyX, d.devicePubKeyY, d.owner, d.freq, d.pricePerBlock,
-      d.settledBalance, d.pendingBalance, d.spec,
-      d.startHeight, d.duration, d.storageEPoint, d.storageToken);
+      d.settledBalance, d.pendingBalance, d.spec);
   }
+
+  // Get device order by ID
+  function getDeviceOrderByID(
+      bytes32 _deviceId
+    ) public view returns (uint256, uint256, string memory, string memory) {
+      require(devices[_deviceId].devicePubKeyX != 0, "no such device");
+      require(devices[_deviceId].devicePubKeyY != 0, "no such device");
+
+      Device memory d = devices[_deviceId];
+      return (d.startHeight, d.duration, d.storageEPoint, d.storageToken);
+    }
 }
