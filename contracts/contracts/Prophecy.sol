@@ -71,8 +71,8 @@ contract Prophecy is Pausable {
     bytes32 _devicePubKeyX,
     bytes32 _devicePubKeyY,
     uint256 _freq,
-    string memory _spec,
-    uint256 _price
+    uint256 _price,
+    string memory _spec
     )
     public whenNotPaused payable returns (bool)
     {

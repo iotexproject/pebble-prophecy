@@ -39,7 +39,7 @@ contract('Prophecy', function ([owner]) {
     let _deviceIdHash = web3.utils.keccak256(web3.eth.abi.encodeParameter('bytes32', _deviceId));
     await this.prophecy.preRegisterDevice(_deviceIdHash);
 
-    let _result = await this.prophecy.registerDevice(_deviceId, _devicePubKeyX, _devicePubKeyY, _freq, _spec, _price);
+    let _result = await this.prophecy.registerDevice(_deviceId, _devicePubKeyX, _devicePubKeyY, _freq, _price, _spec);
 
     assert.equal(_result.receipt.status, true);
 
@@ -57,7 +57,7 @@ contract('Prophecy', function ([owner]) {
       let _deviceIdHash = web3.utils.keccak256(web3.eth.abi.encodeParameter('bytes32', _deviceId));
       await this.prophecy.preRegisterDevice(_deviceIdHash);
 
-      await this.prophecy.registerDevice(_deviceId, _devicePubKeyX, _devicePubKeyY, _freq, _spec, _price);
+      await this.prophecy.registerDevice(_deviceId, _devicePubKeyX, _devicePubKeyY, _freq, _price, _spec);
     });
 
     it('update device', async function () {
