@@ -68,24 +68,27 @@ contract('Prophecy', function ([owner]) {
       let _spec = "xxxx";
       let _price = 1234;
 
-      let _result = await this.prophecy.updateDevice(_deviceId, _devicePubKeyX, _devicePubKeyY, _freq, _spec, _price);
+      let _result = await this.prophecy.updateDevice(_deviceId, _devicePubKeyX, _devicePubKeyY, _freq, _price, _spec);
       assert.equal(_result.receipt.status, true);
 
     });
 
     it('subscribe', async function () {
       let _deviceId = web3.utils.fromAscii("random0");
-      let _result = await this.prophecy.subscribe(_deviceId, "aaa", "bbb", 1, { from: owner, value: 100 });
+      let _result = await this.prophecy.subscribe(_deviceId, 1, "aaa", "bbb", { from: owner, value: 100 });
       assert.equal(_result.receipt.status, true);
 
     });
 
     it('claim', async function () {
       let _deviceId = web3.utils.fromAscii("random0");
-      await this.prophecy.subscribe(_deviceId, "aaa", "bbb", 1, { from: owner, value: 100 });
-      let _result = await this.prophecy.claim(_deviceId);
-      assert.equal(_result.receipt.status, true);
-
+      await this.prophecy.subscribe(_deviceId, 1, "aaa", "bbb", { from: owner, value: 100 });
+      try {
+        let _result = await this.prophecy.claim(_deviceId);
+      }
+      catch (error) {
+        assert.equal(error.message.toString(), 'Returned error: VM Exception while processing transaction: revert device in active subscription -- Reason given: device in active subscription.')
+      }
     });
 
     it('get device ids', async function () {
@@ -97,8 +100,10 @@ contract('Prophecy', function ([owner]) {
 
     it('get device by id', async function () {
       let _deviceId = web3.utils.fromAscii("random0");
-      let _result = await this.prophecy.getDeviceByID(_deviceId);
+      let _result = await this.prophecy.getDeviceInfoByID(_deviceId);
 
+      assert.equal(_result[3].toString(), '1');
+      assert.equal(_result[4].toString(), '0');
       assert.equal(_result[7], "xxxx");
     });
 

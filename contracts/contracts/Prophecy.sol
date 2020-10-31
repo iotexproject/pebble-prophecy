@@ -100,8 +100,8 @@ contract Prophecy is Pausable {
       bytes32 _devicePubKeyX,
       bytes32 _devicePubKeyY,
       uint256 _freq,
-      string memory _spec,
-      uint256 _price
+      uint256 _price,
+      string memory _spec
       )
       public whenNotPaused returns (bool)
       {
@@ -110,7 +110,8 @@ contract Prophecy is Pausable {
         require(devices[_deviceId].owner == msg.sender, "not owner");
         require(_devicePubKeyX != 0, "device public key X required");
         require(_devicePubKeyY != 0, "device public key Y required");
-        require(_freq >= 0, "frequence needs to be positive");
+        require(_freq != 0, "frequence cannot be zero");
+        require(_price != 0, "price cannot be zero");
         require(bytes(_spec).length > 0, "spec url is required");
 
         // To be on the safe side, tho we can allow change when a device is subscribed
@@ -129,9 +130,9 @@ contract Prophecy is Pausable {
   // Pay to subscribe to the device's data stream
   function subscribe(
     bytes32 _deviceId,
+    uint256 _duration,
     string memory _storageEPoint,
-    string memory _storageToken,
-    uint256 _duration
+    string memory _storageToken
     ) public whenNotPaused payable returns (bool)
   {
     require(devices[_deviceId].devicePubKeyX != 0, "no such device");
