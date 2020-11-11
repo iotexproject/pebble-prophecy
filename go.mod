@@ -3,6 +3,8 @@ module github.com/iotexproject/prophecy
 go 1.14
 
 require (
+	github.com/ethereum/go-ethereum v1.9.23
+	github.com/iotexproject/go-pkgs v0.1.1
 	github.com/iotexproject/iotex-proto v0.4.3
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/minio/minio-go/v7 v7.0.6-0.20200929220449-755b5633803a
