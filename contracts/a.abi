@@ -190,29 +190,24 @@
       "name": "devices",
       "outputs": [
         {
-          "internalType": "bytes32",
-          "name": "devicePubKeyX",
-          "type": "bytes32"
-        },
-        {
-          "internalType": "bytes32",
-          "name": "devicePubKeyY",
-          "type": "bytes32"
-        },
-        {
           "internalType": "address",
           "name": "owner",
           "type": "address"
         },
         {
-          "internalType": "uint256",
-          "name": "freq",
-          "type": "uint256"
+          "internalType": "bool",
+          "name": "hasOrder",
+          "type": "bool"
         },
         {
-          "internalType": "uint256",
+          "internalType": "uint32",
+          "name": "freq",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint32",
           "name": "pricePerBlock",
-          "type": "uint256"
+          "type": "uint32"
         },
         {
           "internalType": "uint256",
@@ -229,6 +224,47 @@
           "name": "spec",
           "type": "string"
         },
+        {
+          "internalType": "bytes",
+          "name": "rsaPubkeyN",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
+          "name": "rsaPubkeyE",
+          "type": "bytes"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "maxDuration",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "orders",
+      "outputs": [
         {
           "internalType": "uint256",
           "name": "startHeight",
@@ -248,21 +284,6 @@
           "internalType": "string",
           "name": "storageToken",
           "type": "string"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "maxDuration",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
         }
       ],
       "payable": false,
@@ -452,29 +473,29 @@
           "type": "bytes32"
         },
         {
-          "internalType": "bytes32",
-          "name": "_devicePubKeyX",
-          "type": "bytes32"
-        },
-        {
-          "internalType": "bytes32",
-          "name": "_devicePubKeyY",
-          "type": "bytes32"
-        },
-        {
-          "internalType": "uint256",
+          "internalType": "uint32",
           "name": "_freq",
-          "type": "uint256"
+          "type": "uint32"
         },
         {
-          "internalType": "uint256",
+          "internalType": "uint32",
           "name": "_price",
-          "type": "uint256"
+          "type": "uint32"
         },
         {
           "internalType": "string",
           "name": "_spec",
           "type": "string"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_rsaPubkeyN",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_rsaPubkeyE",
+          "type": "bytes"
         }
       ],
       "name": "registerDevice",
@@ -498,29 +519,29 @@
           "type": "bytes32"
         },
         {
-          "internalType": "bytes32",
-          "name": "_devicePubKeyX",
-          "type": "bytes32"
-        },
-        {
-          "internalType": "bytes32",
-          "name": "_devicePubKeyY",
-          "type": "bytes32"
-        },
-        {
-          "internalType": "uint256",
+          "internalType": "uint32",
           "name": "_freq",
-          "type": "uint256"
+          "type": "uint32"
         },
         {
-          "internalType": "uint256",
+          "internalType": "uint32",
           "name": "_price",
-          "type": "uint256"
+          "type": "uint32"
         },
         {
           "internalType": "string",
           "name": "_spec",
           "type": "string"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_rsaPubkeyN",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_rsaPubkeyE",
+          "type": "bytes"
         }
       ],
       "name": "updateDevice",
@@ -650,29 +671,19 @@
       "name": "getDeviceInfoByID",
       "outputs": [
         {
-          "internalType": "bytes32",
-          "name": "",
-          "type": "bytes32"
-        },
-        {
-          "internalType": "bytes32",
-          "name": "",
-          "type": "bytes32"
-        },
-        {
           "internalType": "address",
           "name": "",
           "type": "address"
         },
         {
-          "internalType": "uint256",
+          "internalType": "uint32",
           "name": "",
-          "type": "uint256"
+          "type": "uint32"
         },
         {
-          "internalType": "uint256",
+          "internalType": "uint32",
           "name": "",
-          "type": "uint256"
+          "type": "uint32"
         },
         {
           "internalType": "uint256",
@@ -688,6 +699,16 @@
           "internalType": "string",
           "name": "",
           "type": "string"
+        },
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
         }
       ],
       "payable": false,

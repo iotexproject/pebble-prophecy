@@ -14,6 +14,7 @@ contract Prophecy is Pausable {
   /// STORAGE MAPPINGS
   bytes32[] public deviceIDs;
   mapping (bytes32 => Device) public devices;
+  mapping (bytes32 => Order) public orders;
   mapping (bytes32 => bool) public allowedIDHashes; // allowed hashes of IDs
 
   uint256 public registrationFee;
@@ -26,20 +27,23 @@ contract Prophecy is Pausable {
   /// TYPES
   struct Device {
       // Intrinsic properties
-      bytes32 devicePubKeyX; // device public key X co-ordinate
-      bytes32 devicePubKeyY; // device public key Y co-ordinate
-      address owner;        // owner's address
-      uint256 freq;         // how many seconds per data point
-      uint256 pricePerBlock; // in terms of IOTX
+      address owner;          // owner's address
+      bool    hasOrder;       // order placed
+      uint32  freq;           // how many seconds per data point
+      uint32  pricePerBlock;  // in terms of IOTX
       uint256 settledBalance; // balance ready to claim
       uint256 pendingBalance; // balance in pending
-      string  spec;         // link to the spec
+      string  spec;           // link to the spec
+      bytes   rsaPubkeyN;     // RSA public key N
+      bytes   rsaPubkeyE;     // RSA public key E
+  }
 
+  struct Order {
       // Order info
-      uint256 startHeight;    // the height starting from which this device's data stream is bought
-      uint256 duration;       // how many blocks this order lasts
-      string storageEPoint;  // storage endpoint buyer provides
-      string storageToken;   // access token to the storage endpoint, encrypted by devicePublicKey
+      uint256 startHeight;  // the height starting from which this device's data stream is bought
+      uint256 duration;     // how many blocks this order lasts
+      string storageEPoint; // storage endpoint buyer provides
+      string storageToken;  // access token to the storage endpoint, encrypted by devicePublicKey
   }
 
   // CONSTRUCTOR
@@ -68,27 +72,26 @@ contract Prophecy is Pausable {
   // Pay to Register the device
   function registerDevice(
     bytes32 _deviceId,
-    bytes32 _devicePubKeyX,
-    bytes32 _devicePubKeyY,
-    uint256 _freq,
-    uint256 _price,
-    string memory _spec
+    uint32 _freq,
+    uint32 _price,
+    string memory _spec,
+    bytes memory _rsaPubkeyN,
+    bytes memory _rsaPubkeyE
     )
     public whenNotPaused payable returns (bool)
     {
       require(allowedIDHashes[keccak256(abi.encodePacked(_deviceId))], "id not allowed");
-      require(devices[_deviceId].devicePubKeyX == 0, "already registered");
-      require(devices[_deviceId].devicePubKeyY == 0, "already registered");
-      require(_devicePubKeyX != 0, "device public key X required");
-      require(_devicePubKeyY != 0, "device public key Y required");
+      require(devices[_deviceId].rsaPubkeyN.length == 0, "already registered");
+      require(devices[_deviceId].rsaPubkeyE.length == 0, "already registered");
+      require(_rsaPubkeyN.length != 0, "RSA public key N required");
+      require(_rsaPubkeyE.length != 0, "RSA public key E required");
       require(_freq >= 0, "frequence needs to be positive");
       require(bytes(_spec).length > 0, "spec url is required");
       require(msg.value >= registrationFee, "not enough fee");
 
       registrationFeeTotal += msg.value;
       allowedIDHashes[keccak256(abi.encodePacked(_deviceId))] = false;
-      devices[_deviceId] = Device(_devicePubKeyX, _devicePubKeyY, msg.sender, _freq,
-        _price, 0, 0, _spec, 0, 0, "", "");
+      devices[_deviceId] = Device(msg.sender, false, _freq, _price, 0, 0, _spec, _rsaPubkeyN, _rsaPubkeyE);
       deviceIDs.push(_deviceId);
       emit Registered(_deviceId, msg.sender);
       return true;
@@ -97,32 +100,33 @@ contract Prophecy is Pausable {
     // Update info about a registered device
     function updateDevice(
       bytes32 _deviceId,
-      bytes32 _devicePubKeyX,
-      bytes32 _devicePubKeyY,
-      uint256 _freq,
-      uint256 _price,
-      string memory _spec
+      uint32 _freq,
+      uint32 _price,
+      string memory _spec,
+      bytes memory _rsaPubkeyN,
+      bytes memory _rsaPubkeyE
       )
       public whenNotPaused returns (bool)
       {
-        require(devices[_deviceId].devicePubKeyX != 0, "not yet registered");
-        require(devices[_deviceId].devicePubKeyY != 0, "not yet registered");
+        require(devices[_deviceId].rsaPubkeyN.length != 0, "not yet registered");
+        require(devices[_deviceId].rsaPubkeyE.length != 0, "not yet registered");
         require(devices[_deviceId].owner == msg.sender, "not owner");
-        require(_devicePubKeyX != 0, "device public key X required");
-        require(_devicePubKeyY != 0, "device public key Y required");
+        require(_rsaPubkeyN.length != 0, "RSA public key N required");
+        require(_rsaPubkeyE.length != 0, "RSA public key E required");
         require(_freq != 0, "frequence cannot be zero");
         require(_price != 0, "price cannot be zero");
         require(bytes(_spec).length > 0, "spec url is required");
 
         // To be on the safe side, tho we can allow change when a device is subscribed
-        uint256 endHeight = devices[_deviceId].startHeight + devices[_deviceId].duration;
-        require(endHeight == 0 || endHeight < block.number, "device in active subscription");
+        if (devices[_deviceId].hasOrder) {
+          require(orders[_deviceId].startHeight + orders[_deviceId].duration < block.number, "device in active subscription");
+        }
 
-        devices[_deviceId] = Device(_devicePubKeyX, _devicePubKeyY, msg.sender, _freq, _price,
-          devices[_deviceId].settledBalance, devices[_deviceId].pendingBalance, _spec,
-          devices[_deviceId].startHeight, devices[_deviceId].duration,
-          devices[_deviceId].storageEPoint, devices[_deviceId].storageToken);
-
+        devices[_deviceId].freq = _freq;
+        devices[_deviceId].pricePerBlock = _price;
+        devices[_deviceId].spec = _spec;
+        devices[_deviceId].rsaPubkeyN = _rsaPubkeyN;
+        devices[_deviceId].rsaPubkeyE = _rsaPubkeyE;
         emit Updated(_deviceId, msg.sender);
         return true;
       }
@@ -135,20 +139,26 @@ contract Prophecy is Pausable {
     string memory _storageToken
     ) public whenNotPaused payable returns (bool)
   {
-    require(devices[_deviceId].devicePubKeyX != 0, "no such device");
-    require(devices[_deviceId].devicePubKeyY != 0, "no such device");
+    require(devices[_deviceId].rsaPubkeyN.length != 0, "no such device");
+    require(devices[_deviceId].rsaPubkeyE.length != 0, "no such device");
     require(bytes(_storageEPoint).length > 0, "storage endpoint required");
     require(bytes(_storageToken).length > 0, "storage access token required");
     require(_duration > 0 && _duration <= maxDuration, "inappropriate duration");
     require(msg.value >= subscriptionFee + _duration.mul(devices[_deviceId].pricePerBlock), "not enough fee");
-    uint256 endHeight = devices[_deviceId].startHeight + devices[_deviceId].duration;
-    require(endHeight == 0 || endHeight < block.number, "device in active subscription");
+
+    if (devices[_deviceId].hasOrder) {
+      require(orders[_deviceId].startHeight + orders[_deviceId].duration < block.number, "device in active subscription");
+      orders[_deviceId].startHeight = block.number;
+      orders[_deviceId].duration = _duration;
+      orders[_deviceId].storageEPoint = _storageEPoint;
+      orders[_deviceId].storageToken = _storageToken;
+    } else {
+      // first time subscrible
+      devices[_deviceId].hasOrder = true;
+      orders[_deviceId] = Order(block.number, _duration, _storageEPoint, _storageToken);
+    }
 
     subscriptionFeeTotal += subscriptionFee;
-    devices[_deviceId].startHeight = block.number;
-    devices[_deviceId].storageEPoint = _storageEPoint;
-    devices[_deviceId].storageToken = _storageToken;
-    devices[_deviceId].duration = _duration;
     if (devices[_deviceId].pendingBalance > 0) {
       devices[_deviceId].settledBalance = devices[_deviceId].settledBalance.add(devices[_deviceId].pendingBalance);
     }
@@ -160,12 +170,12 @@ contract Prophecy is Pausable {
   // Device owner claims the payment after its matured
   function claim(bytes32 _deviceId) public whenNotPaused returns (bool)
   {
+    require(devices[_deviceId].rsaPubkeyN.length != 0, "no such device");
+    require(devices[_deviceId].rsaPubkeyE.length != 0, "no such device");
     require(devices[_deviceId].owner == msg.sender, "not owner");
-    require(devices[_deviceId].devicePubKeyX != 0, "no such device");
-    require(devices[_deviceId].devicePubKeyY != 0, "no such device");
-    uint256 endHeight = devices[_deviceId].startHeight + devices[_deviceId].duration;
-    require(endHeight > 0, "device not yet subscribed");
-    require(endHeight < block.number, "device in active subscription");
+    require(devices[_deviceId].hasOrder, "device not yet subscribed");
+    require(orders[_deviceId].startHeight + orders[_deviceId].duration < block.number, "device in active subscription");
+
     if (devices[_deviceId].pendingBalance > 0) {
       devices[_deviceId].settledBalance = devices[_deviceId].settledBalance.add(devices[_deviceId].pendingBalance);
       devices[_deviceId].pendingBalance = 0;
@@ -208,23 +218,23 @@ contract Prophecy is Pausable {
   // Get device info by ID
   function getDeviceInfoByID(
     bytes32 _deviceId
-  ) public view returns (bytes32, bytes32, address, uint256, uint256, uint256, uint256, string memory) {
-    require(devices[_deviceId].devicePubKeyX != 0, "no such device");
-    require(devices[_deviceId].devicePubKeyY != 0, "no such device");
+  ) public view returns (address, uint32, uint32, uint256, uint256, string memory, bytes memory, bytes memory) {
+    require(devices[_deviceId].rsaPubkeyN.length != 0, "no such device");
+    require(devices[_deviceId].rsaPubkeyE.length != 0, "no such device");
 
     Device memory d = devices[_deviceId];
-    return (d.devicePubKeyX, d.devicePubKeyY, d.owner, d.freq, d.pricePerBlock,
-      d.settledBalance, d.pendingBalance, d.spec);
+    return (d.owner, d.freq, d.pricePerBlock, d.settledBalance, d.pendingBalance, d.spec, d.rsaPubkeyN, d.rsaPubkeyE);
   }
 
   // Get device order by ID
   function getDeviceOrderByID(
       bytes32 _deviceId
     ) public view returns (uint256, uint256, string memory, string memory) {
-      require(devices[_deviceId].devicePubKeyX != 0, "no such device");
-      require(devices[_deviceId].devicePubKeyY != 0, "no such device");
+      require(devices[_deviceId].rsaPubkeyN.length != 0, "no such device");
+      require(devices[_deviceId].rsaPubkeyE.length != 0, "no such device");
+      require(devices[_deviceId].hasOrder, "no order yet");
 
-      Device memory d = devices[_deviceId];
-      return (d.startHeight, d.duration, d.storageEPoint, d.storageToken);
+      Order memory o = orders[_deviceId];
+      return (o.startHeight, o.duration, o.storageEPoint, o.storageToken);
     }
 }
