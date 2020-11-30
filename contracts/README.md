@@ -83,4 +83,4 @@ return: 00000000000000000000000000000000000000000000000000000000005f77f800000000
 ```ioctl contract compile Prophecy --abi-out a.abi --bin-out a.bin```
 ``` ioctl contract deploy bin a.bin --endpoint api.iotex.one:443```
 
-Contract `io1a8qeke954ncyddc0ek3vlq5xpz54f0l7lyx8wg` has been deployed on mainnet (via this [action](https://iotexscan.io/action/ea5f1dbb96ccdd6522508e12b7b16d246343ade248f326a3cce7f5173cbe15bd))
+Contract `io1y6asvyp7qs0y0zqjluu53pgk0xkwrqgxhgvve6` has been deployed on mainnet (via this [action](https://iotexscan.io/action/78e3255d177533d575041a20ce0216a4407cdee0f83529e6ee51f5091112ea02))
