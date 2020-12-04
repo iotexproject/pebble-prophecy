@@ -10,10 +10,11 @@ This contract implements the registration and pay-to-subscribe flow of the devic
 
 ### Deploy
 ```ioctl contract compile Prophecy --abi-out a.abi --bin-out a.bin```
-``` ioctl contract deploy bin a.bin --endpoint api.testnet.iotex.one:443```
+
+```ioctl contract deploy bin a.bin --endpoint api.testnet.iotex.one:443```
 
 ### Invoke
-We use `io1zclqa7w3gxpk47t3y3g9gzujgtl44lastfth28` deployed on testnet (via this [action](https://testnet.iotexscan.io/action/2d371248a62be44370e6b10c6ba11ff7491674e84546bcc1f711fb955c6a032c)) as an example to invoke.
+We use `io12wm2lz8z3jac2ey9fa6eemmejm24qsghugnmfr` deployed on testnet (via this [action](iotexscan.io/action/691fd243fba57d0ba178cced94c6ebb228ef6462a944313560f0103a447238ae)) as an example to invoke.
 
 **setRegistrationFee()**
 ```
@@ -83,4 +84,4 @@ return: 00000000000000000000000000000000000000000000000000000000005f77f800000000
 ```ioctl contract compile Prophecy --abi-out a.abi --bin-out a.bin```
 ``` ioctl contract deploy bin a.bin --endpoint api.iotex.one:443```
 
-Contract `io1y6asvyp7qs0y0zqjluu53pgk0xkwrqgxhgvve6` has been deployed on mainnet (via this [action](https://iotexscan.io/action/78e3255d177533d575041a20ce0216a4407cdee0f83529e6ee51f5091112ea02))
+Contract `io12rcmdvmd5htqces0p9jxr5d99gvzplty2dvc7a` has been deployed on mainnet (via this [action](iotexscan.io/action/9869c9215e9faa857d7b953a30ff99bbf14cb76f1fce99f828b3ea7bad7aa980))
