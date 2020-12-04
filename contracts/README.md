@@ -14,7 +14,7 @@ This contract implements the registration and pay-to-subscribe flow of the devic
 ```ioctl contract deploy bin a.bin --endpoint api.testnet.iotex.one:443```
 
 ### Invoke
-We use `io12wm2lz8z3jac2ey9fa6eemmejm24qsghugnmfr` deployed on testnet (via this [action](https://iotexscan.io/action/691fd243fba57d0ba178cced94c6ebb228ef6462a944313560f0103a447238ae)) as an example to invoke.
+We use `io12wm2lz8z3jac2ey9fa6eemmejm24qsghugnmfr` deployed on testnet (via this [action](https://testnet.iotexscan.io/action/691fd243fba57d0ba178cced94c6ebb228ef6462a944313560f0103a447238ae)) as an example to invoke.
 
 **setRegistrationFee()**
 ```
