@@ -30,7 +30,7 @@ contract Prophecy is Pausable {
       address owner;          // owner's address
       bool    hasOrder;       // order placed
       uint32  freq;           // how many seconds per data point
-      uint32  pricePerBlock;  // in terms of IOTX
+      uint32  pricePerBlock;  // in terms of IOTX, in RAUL/Wei (which 1e-18)
       uint256 settledBalance; // balance ready to claim
       uint256 pendingBalance; // balance in pending
       string  spec;           // link to the spec
@@ -114,7 +114,6 @@ contract Prophecy is Pausable {
         require(_rsaPubkeyN.length != 0, "RSA public key N required");
         require(_rsaPubkeyE.length != 0, "RSA public key E required");
         require(_freq != 0, "frequence cannot be zero");
-        require(_price != 0, "price cannot be zero");
         require(bytes(_spec).length > 0, "spec url is required");
 
         // To be on the safe side, tho we can allow change when a device is subscribed

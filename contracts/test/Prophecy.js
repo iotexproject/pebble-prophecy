@@ -223,4 +223,37 @@ contract('Prophecy', function ([owner, alpha]) {
     assert.equal(_result.receipt.status, true);
   });
 
+  it('register device w/ free stream', async function () {
+    let _deviceId = web3.utils.fromAscii("random789");
+    let _freq = 1;
+    let _spec = "xxxx";
+    let _price = 0; // free stream
+    let _rsaPubkeyN = web3.utils.fromAscii("random1");
+    let _rsaPubkeyE = web3.utils.fromAscii("random2");
+
+    let _deviceIdHash = web3.utils.keccak256(web3.eth.abi.encodeParameter('bytes32', _deviceId));
+    await this.prophecy.preRegisterDevice(_deviceIdHash);
+
+    let _result = await this.prophecy.registerDevice(_deviceId, _freq, _price, _spec, _rsaPubkeyN, _rsaPubkeyE);
+    assert.equal(_result.receipt.status, true);
+
+    // check if registered
+    _result = await this.prophecy.getDeviceInfoByID(_deviceId);
+    assert.equal(_result[1].toString(), '1');
+    assert.equal(_result[2].toString(), '0'); // free, yay!
+    assert.equal(_result[5], "xxxx");
+    assert.equal(_result[6].toString(), "0x72616e646f6d31");
+    assert.equal(_result[7].toString(), "0x72616e646f6d32");
+
+    // make sure everything is free
+    assert.equal(await this.prophecy.subscriptionFee(), 0);
+
+    // should be able to subscribe to this free stream
+    _result = await this.prophecy.subscribe(_deviceId, 394, "lalala", "hahaha", { from: owner, value: 0 });
+    assert.equal(_result.receipt.status, true);
+    _result = await this.prophecy.getDeviceOrderByID(_deviceId);
+    assert.equal(_result[1].toString(), '394');
+    assert.equal(_result[2].toString(), 'lalala');
+    assert.equal(_result[3].toString(), "hahaha");
+  });
 });
