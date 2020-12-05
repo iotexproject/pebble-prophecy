@@ -256,4 +256,27 @@ contract('Prophecy', function ([owner, alpha]) {
     assert.equal(_result[2].toString(), 'lalala');
     assert.equal(_result[3].toString(), "hahaha");
   });
+
+  // https://github.com/iotexproject/pebble-prophecy/issues/9
+  it('getDeviceOrderByID() return null when no order is available', async function () {
+    let _deviceId = web3.utils.fromAscii("random789");
+    let _freq = 1;
+    let _spec = "xxxx";
+    let _price = 0; // free stream
+    let _rsaPubkeyN = web3.utils.fromAscii("random1");
+    let _rsaPubkeyE = web3.utils.fromAscii("random2");
+
+    let _deviceIdHash = web3.utils.keccak256(web3.eth.abi.encodeParameter('bytes32', _deviceId));
+    await this.prophecy.preRegisterDevice(_deviceIdHash);
+
+    let _result = await this.prophecy.registerDevice(_deviceId, _freq, _price, _spec, _rsaPubkeyN, _rsaPubkeyE);
+    assert.equal(_result.receipt.status, true);
+
+    // check order while there is no order
+    _result = await this.prophecy.getDeviceOrderByID(_deviceId);
+    console.log(_result)
+    assert.equal(_result[1], 0);
+    assert.equal(_result[2].toString(), "");
+    assert.equal(_result[3].toString(), "");
+  });
 });

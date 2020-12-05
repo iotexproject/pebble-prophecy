@@ -231,9 +231,11 @@ contract Prophecy is Pausable {
     ) public view returns (uint256, uint256, string memory, string memory) {
       require(devices[_deviceId].rsaPubkeyN.length != 0, "no such device");
       require(devices[_deviceId].rsaPubkeyE.length != 0, "no such device");
-      require(devices[_deviceId].hasOrder, "no order yet");
 
-      Order memory o = orders[_deviceId];
-      return (o.startHeight, o.duration, o.storageEPoint, o.storageToken);
+      if (devices[_deviceId].hasOrder) {
+        Order memory o = orders[_deviceId];
+        return (o.startHeight, o.duration, o.storageEPoint, o.storageToken);
+      }
+      return (0, 0, "", "");
     }
 }
