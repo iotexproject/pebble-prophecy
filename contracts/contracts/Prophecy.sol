@@ -141,7 +141,6 @@ contract Prophecy is Pausable {
     require(devices[_deviceId].rsaPubkeyN.length != 0, "no such device");
     require(devices[_deviceId].rsaPubkeyE.length != 0, "no such device");
     require(bytes(_storageEPoint).length > 0, "storage endpoint required");
-    require(bytes(_storageToken).length > 0, "storage access token required");
     require(_duration > 0 && _duration <= maxDuration, "inappropriate duration");
     require(msg.value >= subscriptionFee + _duration.mul(devices[_deviceId].pricePerBlock), "not enough fee");
 

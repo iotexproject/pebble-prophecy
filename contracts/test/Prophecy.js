@@ -249,12 +249,12 @@ contract('Prophecy', function ([owner, alpha]) {
     assert.equal(await this.prophecy.subscriptionFee(), 0);
 
     // should be able to subscribe to this free stream
-    _result = await this.prophecy.subscribe(_deviceId, 394, "lalala", "hahaha", { from: owner, value: 0 });
+    _result = await this.prophecy.subscribe(_deviceId, 394, "lalala", "", { from: owner, value: 0 });
     assert.equal(_result.receipt.status, true);
     _result = await this.prophecy.getDeviceOrderByID(_deviceId);
     assert.equal(_result[1].toString(), '394');
     assert.equal(_result[2].toString(), 'lalala');
-    assert.equal(_result[3].toString(), "hahaha");
+    assert.equal(_result[3].toString(), "");  // empty _storageToken
   });
 
   // https://github.com/iotexproject/pebble-prophecy/issues/9
