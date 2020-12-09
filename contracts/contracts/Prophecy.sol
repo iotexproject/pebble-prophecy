@@ -30,7 +30,7 @@ contract Prophecy is Pausable {
       address owner;          // owner's address
       bool    hasOrder;       // order placed
       uint32  freq;           // how many seconds per data point
-      uint32  pricePerBlock;  // in terms of IOTX, in RAUL/Wei (which 1e-18)
+      uint256 pricePerBlock;  // in terms of IOTX, in RAUL/Wei (which 1e-18)
       uint256 settledBalance; // balance ready to claim
       uint256 pendingBalance; // balance in pending
       string  spec;           // link to the spec
@@ -101,7 +101,7 @@ contract Prophecy is Pausable {
     function updateDevice(
       bytes32 _deviceId,
       uint32 _freq,
-      uint32 _price,
+      uint256 _price,
       string memory _spec,
       bytes memory _rsaPubkeyN,
       bytes memory _rsaPubkeyE
@@ -216,7 +216,7 @@ contract Prophecy is Pausable {
   // Get device info by ID
   function getDeviceInfoByID(
     bytes32 _deviceId
-  ) public view returns (address, uint32, uint32, uint256, uint256, string memory, bytes memory, bytes memory) {
+  ) public view returns (address, uint32, uint256, uint256, uint256, string memory, bytes memory, bytes memory) {
     require(devices[_deviceId].rsaPubkeyN.length != 0, "no such device");
     require(devices[_deviceId].rsaPubkeyE.length != 0, "no such device");
 
