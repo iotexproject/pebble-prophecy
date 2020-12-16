@@ -73,7 +73,7 @@ contract Prophecy is Pausable {
   function registerDevice(
     bytes32 _deviceId,
     uint32 _freq,
-    uint32 _price,
+    uint256 _price,
     string memory _spec,
     bytes memory _rsaPubkeyN,
     bytes memory _rsaPubkeyE
