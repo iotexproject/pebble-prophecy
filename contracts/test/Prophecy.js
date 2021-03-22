@@ -20,7 +20,6 @@ contract('Prophecy', function ([owner, alpha]) {
   });
 
   it('pre-register device', async function () {
-
     let _deviceId = '0xc1912fee45d61c87cc5ea59dae31190fffff232d';
     await this.prophecy.preRegisterDevice(owner);
 
@@ -36,7 +35,7 @@ contract('Prophecy', function ([owner, alpha]) {
   });
 
   it('register device', async function () {
-    let _deviceId = '0xc1912fee45d61c87cc5ea59dae31190fffff232d';
+    let _deviceId = '0x53fbc28faf9a52dfe5f591948a23189e900381b5';
     let _freq = 1;
     let _spec = "xxxx";
     let _price = 1;
@@ -45,13 +44,16 @@ contract('Prophecy', function ([owner, alpha]) {
 
     await this.prophecy.preRegisterDevice(_deviceId);
 
-    let _result = await this.prophecy.registerDevice(_deviceId, _freq, _price, _spec, _rsaPubkeyN, _rsaPubkeyE);
+    let hash = web3.utils.hexToBytes('0xf93a97fae37fdadab6d49b74e3f3e4bee707ea2f007e08007bcc356cb283665b');
+    let r = web3.utils.hexToBytes('0x5595906a47dfc107a78cc48b500f89ab2dec545ba86578295aed4a260ce9a98b');
+    let s = web3.utils.hexToBytes('0x335924e86f683832e313f1a5dda7826d9b59caf40dd22ce92716420a367dfaec');
+    let _result = await this.prophecy.registerDevice(_deviceId, hash, r, s, _freq, _price, _spec, _rsaPubkeyN, _rsaPubkeyE);
     assert.equal(_result.receipt.status, true);
     assert.equal(await this.prophecy.whitelist(_deviceId), 2);
 
     // cannot register again
     try {
-      await this.prophecy.registerDevice(_deviceId, _freq, _price, _spec, _rsaPubkeyN, _rsaPubkeyE);
+      await this.prophecy.registerDevice(_deviceId, hash, r, s, _freq, _price, _spec, _rsaPubkeyN, _rsaPubkeyE);
     } catch (err) {
       assert.equal(err.message.toString(), 'Returned error: VM Exception while processing transaction: revert id not allowed -- Reason given: id not allowed.')
     }
@@ -59,7 +61,7 @@ contract('Prophecy', function ([owner, alpha]) {
     // register device not in whitelist
     _deviceId = '0xc1912fee45d61c87cc5ea59dae31190fffff232f';
     try {
-      await this.prophecy.registerDevice(_deviceId, _freq, _price, _spec, _rsaPubkeyN, _rsaPubkeyE);
+      await this.prophecy.registerDevice(_deviceId, hash, r, s, _freq, _price, _spec, _rsaPubkeyN, _rsaPubkeyE);
     } catch (err) {
       assert.equal(err.message.toString(), 'Returned error: VM Exception while processing transaction: revert id not allowed -- Reason given: id not allowed.')
     }
@@ -76,7 +78,10 @@ contract('Prophecy', function ([owner, alpha]) {
 
       await this.prophecy.preRegisterDevice(_deviceId);
 
-      let _result = await this.prophecy.registerDevice(_deviceId, _freq, _price, _spec, _rsaPubkeyN, _rsaPubkeyE);
+      let hash = web3.utils.hexToBytes('0xf93a97fae37fdadab6d49b74e3f3e4bee707ea2f007e08007bcc356cb283665b');
+      let r = web3.utils.hexToBytes('0x5595906a47dfc107a78cc48b500f89ab2dec545ba86578295aed4a260ce9a98b');
+      let s = web3.utils.hexToBytes('0x335924e86f683832e313f1a5dda7826d9b59caf40dd22ce92716420a367dfaec');
+      let _result = await this.prophecy.registerDevice(_deviceId, hash, r, s, _freq, _price, _spec, _rsaPubkeyN, _rsaPubkeyE);
       assert.equal(_result.receipt.status, true);
     });
 
@@ -231,7 +236,10 @@ contract('Prophecy', function ([owner, alpha]) {
 
     await this.prophecy.preRegisterDevice(_deviceId);
 
-    let _result = await this.prophecy.registerDevice(_deviceId, _freq, _price, _spec, _rsaPubkeyN, _rsaPubkeyE);
+    let hash = web3.utils.hexToBytes('0xf93a97fae37fdadab6d49b74e3f3e4bee707ea2f007e08007bcc356cb283665b');
+    let r = web3.utils.hexToBytes('0x5595906a47dfc107a78cc48b500f89ab2dec545ba86578295aed4a260ce9a98b');
+    let s = web3.utils.hexToBytes('0x335924e86f683832e313f1a5dda7826d9b59caf40dd22ce92716420a367dfaec');
+    let _result = await this.prophecy.registerDevice(_deviceId, hash, r, s, _freq, _price, _spec, _rsaPubkeyN, _rsaPubkeyE);
     assert.equal(_result.receipt.status, true);
 
     // check if registered
@@ -255,7 +263,7 @@ contract('Prophecy', function ([owner, alpha]) {
   });
 
   // https://github.com/iotexproject/pebble-prophecy/issues/9
-  it('getDeviceOrderByID() return null when no order is available', async function () {
+  it('getDeviceOrderByAddr() return null when no order is available', async function () {
     let _deviceId = '0xc1912fee45d61c87cc5ea59dae31190fffff232f';
     let _freq = 1;
     let _spec = "xxxx";
@@ -265,7 +273,10 @@ contract('Prophecy', function ([owner, alpha]) {
 
     await this.prophecy.preRegisterDevice(_deviceId);
 
-    let _result = await this.prophecy.registerDevice(_deviceId, _freq, _price, _spec, _rsaPubkeyN, _rsaPubkeyE);
+    let hash = web3.utils.hexToBytes('0xf93a97fae37fdadab6d49b74e3f3e4bee707ea2f007e08007bcc356cb283665b');
+    let r = web3.utils.hexToBytes('0x5595906a47dfc107a78cc48b500f89ab2dec545ba86578295aed4a260ce9a98b');
+    let s = web3.utils.hexToBytes('0x335924e86f683832e313f1a5dda7826d9b59caf40dd22ce92716420a367dfaec');
+    let _result = await this.prophecy.registerDevice(_deviceId, hash, r, s, _freq, _price, _spec, _rsaPubkeyN, _rsaPubkeyE);
     assert.equal(_result.receipt.status, true);
 
     // check order while there is no order

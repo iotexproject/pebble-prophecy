@@ -1,4 +1,4 @@
-pragma solidity <6.0 >=0.4.24;
+pragma solidity <0.6.0 >=0.4.24;
 
 import "./Pausable.sol";
 import "./SafeMath.sol";
@@ -71,7 +71,10 @@ contract Prophecy is Pausable {
 
   // Pay to Register the device
   function registerDevice(
-    address _deviceId,
+    address _ownerAddr,
+    bytes32 hash,
+    bytes32 r,
+    bytes32 s,
     uint32 _freq,
     uint256 _price,
     string memory _spec,
@@ -80,8 +83,20 @@ contract Prophecy is Pausable {
     )
     public whenNotPaused payable returns (bool)
     {
-      //require(_ownerAddr != address(0), "invalid owner address");
-      require(whitelist[_deviceId] == 1, "id not allowed");
+      require(_ownerAddr != address(0), "invalid owner address");
+
+      // recover public key from signature
+      bool hit;
+      address _deviceId;
+      for (uint8 v = 0; v < 4; v++) {
+        _deviceId = ecrecover(hash, v, r, s);
+        if (whitelist[_deviceId] == 1) {
+          hit = true;
+          break;
+        }
+      }
+
+      require(hit, "id not allowed");
       require(devices[_deviceId].rsaPubkeyN.length == 0, "already registered");
       require(devices[_deviceId].rsaPubkeyE.length == 0, "already registered");
       require(_rsaPubkeyN.length != 0, "RSA public key N required");
